@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Using equal area method to decide the yield point
-
+Using equal area method to find the yield point
+Input: xlsx with two columns: displacement and force
+return: yield displacement and yield force
+Using 5-th polynominals to fit the skeleton
 Created on Tue Mar 10 19:27:13 2020
 
 @author: Ray
@@ -32,10 +34,7 @@ def equal_area(pathofxlsx:str):
         inte = (D[index_max_point]-i)*max(F)+i*max(F)/2
         yieldinte.append(inte)
         yieldd.append(i)
-    chazhi = []
-    for m  in yieldinte:
-        chazhi.append(m-res)
-    chazhi = [abs(i) for i in chazhi]
+    chazhi = [abs(m-res) for m in yieldinte]
     dindex = chazhi.index(min(chazhi))
     return yieldd[dindex],p(yieldd[dindex])
 

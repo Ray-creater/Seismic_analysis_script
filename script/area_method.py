@@ -15,7 +15,7 @@ import scipy.integrate
 # denoise section
 def equal_area(pathofxlsx:str):
     pathofxlsx=r'C:\Users\Ray\Desktop\实验\数据\780mm-强轴-轴压比0.1(ok)\baoluo.xlsx'
-    d = pd.read_excel(rpath)
+    d = pd.read_excel(pathofxlsx)
     array = d.iloc[:,1:3]
     positive_disp_array=array[array[0]>0]
     D=positive_disp_array.iloc[:,0]

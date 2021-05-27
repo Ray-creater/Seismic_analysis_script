@@ -2,9 +2,10 @@
 Energy dissipation calculation 
 
 """
-from script.usrdefine import *
+from analysis_script.usrdefine import *
 import pandas as pd 
 import numpy as np 
+import itertools
 
 class Curve():
     def __init__(self,D,F):
@@ -42,12 +43,14 @@ class Curve():
         Eratio=[i/j for i,j in zip(energy_real,energy_trangle)]
         equavilent_nianzhi_index=[i/2/np.pi for i in Eratio]
         Esum=sum(energy_real)
-        return energy_real,Eratio,Esum
+        energy_accumulation=list(itertools.accumulate(energy_real))
+        return energy_real,energy_accumulation,Eratio,Esum
 
         
 
-if __name__ == "__main__":
-    rpath=r'C:\Users\Ray\Desktop\实验\数据\name_modify\6\final.xlsx'
-    wpath=r'C:\Users\Ray\Desktop\实验\数据\name_modify\6\等效粘滞阻尼系数.xlsx'
-    sta=pd.read_excel(rpath,header=None)
+
+def energy_disspation(hysteresis_data:pd.DataFrame):
+    curve=Curve(hysteresis_data.iloc[:,0],hysteresis_data[:,1])
+    return curve.energy_loops[0],[1]
+
     

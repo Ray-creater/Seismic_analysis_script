@@ -2,15 +2,18 @@
 import os
 from pathlib import Path
 import sys
+import pandas as pd
 
 from PySide2.QtWidgets import *
+from analysis_script.yield_point import *
+from analysis_script.skeleton import skeleton
 
 import matplotlib
 matplotlib.use("Qt5Agg")
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as mplot
-from gui_pyqt5.mywidgets import MyQGroupBox,MyQWidget
+from mywidgets import MyQGroupBox,MyQWidget
 
 
 class MyFigureCanvas(FigureCanvas): 
@@ -30,9 +33,26 @@ class MyFigureCanvas(FigureCanvas):
         self.axes.grid()
         self.draw()
 
-    def redraw(self,x,y,title):
+    def redraw(self,x,y,title,vline=()):
         self.axes.clear()
         self.axes.plot(x,y)
+        if vline:
+            self.axes.vlines(vline[0],0,vline[1],color='red')
+        self.axes.set_title(title)
+        if title=="Energy":
+            self.axes.set_ylabel('Energy(J)')
+        elif title=="Stiffness":
+            self.axes.set_ylabel('Stiffness(kN/mm)')
+        else:
+            self.axes.set_ylabel('Force(kN/mm)')
+        self.axes.set_xlabel('Disp(mm)')
+        self.axes.grid()
+        self.draw()
+
+    def redraw_vline(self,x,y,title,vline:tuple):
+        self.axes.clear()
+        self.axes.plot(x,y)
+        self.axes.vlines(vline[0],0,vline[1],color='red')
         self.axes.set_title(title)
         if title=="Energy":
             self.axes.set_ylabel('Energy(J)')
@@ -69,10 +89,10 @@ class Seismic(QMainWindow):
         path_groupbox=left_option_widget.add_my_qgroupbox("Path",'Vertical')
         curve_groupbox=left_option_widget.add_my_qgroupbox("Curve",'Vertical')
         analysis_groupbox=left_option_widget.add_my_qgroupbox("Analysis",'Vertical')
-        left_option_widget.setStretchFactor(path_groupbox,curve_groupbox,analysis_groupbox,scale=(1,1,1))
+        left_option_widget.setStretchFactor(path_groupbox,curve_groupbox,analysis_groupbox,scale=(1,1,2))
         ### path groupbox setting
         path_groupbox.add_labels('Xlsx select').setFixedHeight(25)
-        self.path_textedit=path_groupbox.add_textedits('Select path');self.path_textedit.setFixedHeight(25);self.path_textedit.setReadOnly(True)
+        self.path_textedit=path_groupbox.add_textedits('Select path');self.path_textedit.setFixedHeight(30);self.path_textedit.setReadOnly(True)
         path_buttons=path_groupbox.add_pushbuttons("Select",'Comfirm')
 
         ### curve groupbox setting 
@@ -107,8 +127,9 @@ class Seismic(QMainWindow):
         analysis_buttons['Yield point'].clicked.connect(self.yield_point_analysis)
         analysis_buttons['Ductility factor'].clicked.connect(self.ductility_factor_analysis)
         analysis_buttons['Stiffness'].clicked.connect(self.stiffness_analysis)
-        analysis_buttons['Energy dissipation per round'].clicked.connect(self.energy_dissipation_per_round)
-        analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.energy_dissipation_accumulation)
+        analysis_buttons['Energy dissipation per round'].clicked.connect(self.energy_dissipation_per_round_analysis)
+        analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.test_button)
+        # analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.energy_dissipation_accumulation_analysis)
 
         ##
         plot_button.clicked.connect(self.replot)
@@ -129,35 +150,52 @@ class Seismic(QMainWindow):
     #readdata
     def comfirm_path(self):
         xlsx_path=self.path_textedit.toPlainText()
+        if xlsx_path!="Select path":
+            self.hysteresis_data=pd.read_excel(xlsx_path)
+        else:
+            QMessageBox.warning(self,"Error",'Please select xslx path')
+        
 
     def hysteresis_curve(self):
+        self.plot_arg=[self.hysteresis_data.iloc[:,0],self.hysteresis_data[:,1],"Hysteresis"]
+        self.display_window.redraw(*self.plot_arg)
         pass
 
     def skeleton_curve(self):
+        self.skeleton_data=skeleton(self.hysteresis_data)
+        self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data[:,1],"Skeleton"]
+        self.display_window.redraw(*self.plot_arg)
         pass
 
     def yield_point_analysis(self):
+        self.skeleton_data=skeleton(self.hysteresis_data)
         for i,j in self.radiobuttons.items():
             if j.isChecked():
                 method_chosen=i
-        print(method_chosen)
-
-
+        if method_chosen=="R-park":
+            yield_point=r_park(self.skeleton_data)
+        elif method_chosen=="Area":
+            yield_point=area(self.skeleton_data)
+        elif method_chosen=="Geometry":
+            yield_point=geometry(self.skeleton_data)
+        self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data[:,1],"Skeleton"]
+        self.display_window.redraw_vline(*self.plot_arg,vline=yield_point)
+        
     def ductility_factor_analysis(self):
         pass
 
     def stiffness_analysis(self):
         pass
 
-    def energy_dissipation_per_round(self):
+    def energy_dissipation_per_round_analysis(self):
         pass
 
-    def energy_dissipation_accumulation(self):
+    def energy_dissipation_accumulation_analysis(self):
         pass
 
+    def test_button(self):
+        self.display_window.redraw(*self.plot_arg,vline=(2,2))
 
-
-    # def yield_point(self):
 
         
 

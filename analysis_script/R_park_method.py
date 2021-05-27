@@ -7,13 +7,10 @@ Created on Sat Mar 21 13:01:41 2020
 
 import pandas as pd
 import numpy as np
-from usrdefine import findclosest
+from analysis_script.usrdefine import findclosest
 
-def r_park(path:str):
-
-    path=r'C:\Users\Ray\Desktop\实验\数据\780mm-强轴-轴压比0.1(ok)\baoluo.xlsx'
-    d = pd.read_excel(path)
-    array = d.iloc[:,1:3]
+def r_park(skeleton_data:pd.DataFrame):
+    array=skeleton_data
     positive_disp_array=array[array[0]>0]
     D=positive_disp_array.iloc[:,0]
     F=positive_disp_array.iloc[:,1]

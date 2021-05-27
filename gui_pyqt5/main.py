@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import sys
 
-from PyQt5.QtWidgets import *
+from PySide2.QtWidgets import *
 
 import matplotlib
 matplotlib.use("Qt5Agg")
@@ -120,13 +120,12 @@ class Seismic(QMainWindow):
         main_layout.addWidget(bottom_message_widget)
         main_layout.setStretchFactor(bottom_message_widget,1)
 
-
         #button function 
         display_plot_button.clicked.connect(self.replot)
 
 
     def replot(self):
-        x=[1,2,3,4,5];y=[1,2,3,4,5].reverse()
+        x=[1,2,3,4,5];y=[5,4,3,2,1]
         title="Stiffness"
         self.display_window.redraw(x, y, title)
         

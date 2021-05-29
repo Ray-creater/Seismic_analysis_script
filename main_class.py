@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+from itertools import accumulate
 import os
 from pathlib import Path
 import sys
@@ -7,6 +8,8 @@ import pandas as pd
 from PySide2.QtWidgets import *
 from analysis_script.yield_point import *
 from analysis_script.skeleton import skeleton
+from analysis_script.usrdefine import *
+from analysis_script.energy import *
 
 import matplotlib
 matplotlib.use("Qt5Agg")
@@ -18,9 +21,9 @@ from mywidgets import MyQGroupBox,MyQWidget
 
 class MyFigureCanvas(FigureCanvas): 
     def __init__(self,x,y,title):
-        fig = Figure()  
-        FigureCanvas.__init__(self, fig)
-        self.axes = fig.add_subplot(111) 
+        self.fig = Figure()  
+        FigureCanvas.__init__(self, self.fig)
+        self.axes = self.fig.add_subplot(111) 
         self.axes.plot(x,y)
         self.axes.set_title(title)
         if title=="Energy":
@@ -110,7 +113,7 @@ class Seismic(QMainWindow):
         self.plot_arg=[[1,2,3,4,5],[1,2,3,4,5],""]
         self.display_window=MyFigureCanvas(*self.plot_arg)
         right_mainview_widge.add_any_qwidget(self.display_window)
-        plot_button=right_mainview_widge.add_pushbuttons('Replot')
+        plot_button=right_mainview_widge.add_pushbuttons('Output pic')
         plot_button.setFixedWidth(100)
 
         #bottom
@@ -132,11 +135,17 @@ class Seismic(QMainWindow):
         # analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.energy_dissipation_accumulation_analysis)
 
         ##
-        plot_button.clicked.connect(self.replot)
+        plot_button.clicked.connect(self.output_pic)
 
         
 
-    def replot(self):
+    def output_pic(self):
+        save_path,_=QFileDialog.getSaveFileName(self)
+        if _:
+            self.display_window.fig.savefig(save_path)
+        else:
+            print("No path choose")
+            
         self.display_window.redraw(*self.plot_arg)
 
 
@@ -152,22 +161,30 @@ class Seismic(QMainWindow):
         xlsx_path=self.path_textedit.toPlainText()
         if xlsx_path!="Select path":
             self.hysteresis_data=pd.read_excel(xlsx_path)
+            print("Read success")
+            print("Hysteresis data: ")
+            print(self.hysteresis_data)
         else:
             QMessageBox.warning(self,"Error",'Please select xslx path')
         
 
     def hysteresis_curve(self):
-        self.plot_arg=[self.hysteresis_data.iloc[:,0],self.hysteresis_data[:,1],"Hysteresis"]
+        if hasattr(self,'hysteresis_data'):
+            self.comfirm_path()
+        self.plot_arg=[self.hysteresis_data.iloc[:,0],self.hysteresis_data.iloc[:,1],"Hysteresis"]
         self.display_window.redraw(*self.plot_arg)
-        pass
+       
 
     def skeleton_curve(self):
+        if not hasattr(self,'hysteresis_data'):
+            self.comfirm_path()
         self.skeleton_data=skeleton(self.hysteresis_data)
-        self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data[:,1],"Skeleton"]
+        self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data.iloc[:,1],"Skeleton"]
         self.display_window.redraw(*self.plot_arg)
-        pass
 
     def yield_point_analysis(self):
+        if not hasattr(self,'hysteresis_data'):
+            self.comfirm_path()
         self.skeleton_data=skeleton(self.hysteresis_data)
         for i,j in self.radiobuttons.items():
             if j.isChecked():
@@ -178,26 +195,79 @@ class Seismic(QMainWindow):
             yield_point=area(self.skeleton_data)
         elif method_chosen=="Geometry":
             yield_point=geometry(self.skeleton_data)
-        self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data[:,1],"Skeleton"]
+        self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data.iloc[:,1],"Skeleton"]
         self.display_window.redraw_vline(*self.plot_arg,vline=yield_point)
         
+            
+        
     def ductility_factor_analysis(self):
-        pass
+        if not hasattr(self,'hysteresis_data'):
+            self.comfirm_path()
+        self.skeleton_data=skeleton(self.hysteresis_data)
+        force_list=self.skeleton_data.iloc[:,1]
+        peak_force=force_list.max()
+        peak_index=findclosest(force_list.values,peak_force)
+        peak_disp=self.skeleton_data.iat[peak_index,0]
+        force_list=force_list.iloc[::-1]  ##to do  check the effect of reversed class
+        failure_index=findclosest(force_list.values,peak_force*0.85)
+        failure_disp_est=self.skeleton_data.iat[failure_index,0]
+        if failure_disp_est>peak_disp:
+            failure_disp=failure_disp_est
+        else:
+            print("No decrease to 0.85, max disp chosen")
+            failure_disp=self.skeleton_data.iloc[:,0].max()
+
+        for i,j in self.radiobuttons.items():
+            if j.isChecked():
+                method_chosen=i
+        if method_chosen=="R-park":
+            yield_point=r_park(self.skeleton_data)
+        elif method_chosen=="Area":
+            yield_point=area(self.skeleton_data)
+        elif method_chosen=="Geometry":
+            yield_point=geometry(self.skeleton_data)
+        yield_disp=yield_point[0]
+        ductility_factor=failure_disp/yield_disp
+        print(ductility_factor)
+        return ductility_factor
 
     def stiffness_analysis(self):
-        pass
+        if not hasattr(self,'hysteresis_data'):
+            self.comfirm_path()
+        self.skeleton_data=skeleton(self.hysteresis_data)
+        disp=self.skeleton_data.iloc[:,0]
+        stiffness=[i[1].iat[1]/i[1].iat[0] for i in self.skeleton_data.iterrows() ]
+        self.plot_arg=[disp,stiffness,"Stiffness"]
+        self.display_window.redraw(*self.plot_arg)
+       
+
+
+
 
     def energy_dissipation_per_round_analysis(self):
-        pass
+        if not hasattr(self,'hysteresis_data'):
+            self.comfirm_path()
 
+        self.energy=energy_disspation(self.hysteresis_data)
+        energy_per_round=self.energy[0]
+        print(energy_per_round)
+        
+            
+        
+            
     def energy_dissipation_accumulation_analysis(self):
-        pass
+        if not hasattr(self,'energy'):
+            self.energy_dissipation_per_round_analysis()
+        energy_accumu=self.energy[1]
+        print(energy_accumu)
+            
+
 
     def test_button(self):
         self.display_window.redraw(*self.plot_arg,vline=(2,2))
 
 
-        
+
 
 if __name__ == "__main__":
     app = QApplication([])

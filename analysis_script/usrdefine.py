@@ -5,14 +5,15 @@ area_trangle: calculate the area of imaginal trangle
 polyfit: fit loops with multinominals 
 puple_sort_combine: sort two list with buble sort for the former
 """
+from typing import Iterable
 import scipy.integrate
 import numpy as np 
 import pandas as pd 
 
 
-
 def area_loop(D,F):
-    sy=[F.index(max(F)),F.index(min(F))]
+    F_dataframe=pd.DataFrame(F)
+    sy=[F_dataframe.idxmax,F_dataframe.idxmin]
     sy.sort()
     line1=(D[sy[0]:sy[1]],F[sy[0]:sy[1]])
     D[sy[0]:sy[1]]=[]
@@ -44,11 +45,10 @@ def puple_sort_combine(a:list,b:list):
         print('Same dimensions required')
 
 
-def findclosest(array,goal):
+def findclosest(array:Iterable,goal):
     try:
         gap_abs=[abs(goal-i) for i in array]
         index=gap_abs.index(min(gap_abs))
-        value=array[index]
         return index
     except:
         raise TypeError("Wrong type for Inputs")

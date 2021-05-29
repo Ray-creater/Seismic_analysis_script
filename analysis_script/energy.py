@@ -29,7 +29,7 @@ class Curve():
     def split_to_loops(self):
         loops={}
         cut_index=[i for i in range(len(self.D)) if abs(self.D[i])<0.5]
-        for j,i in enumerate(range(0,len(cut_index-2),2)):
+        for j,i in enumerate(range(0,len(cut_index)-2,2)):
             loops[j]={"D":self.D[cut_index[i]:cut_index[i+2]],"F":self.F[cut_index[i]:cut_index[i+2]]}
         return loops
 
@@ -41,7 +41,6 @@ class Curve():
             energy_real.append(area_loop(loops[i]["D"],loops[i]["F"]))
             energy_trangle.append(area_trangle(loops[i]["D"],loops[i]["F"]))
         Eratio=[i/j for i,j in zip(energy_real,energy_trangle)]
-        equavilent_nianzhi_index=[i/2/np.pi for i in Eratio]
         Esum=sum(energy_real)
         energy_accumulation=list(itertools.accumulate(energy_real))
         return energy_real,energy_accumulation,Eratio,Esum
@@ -50,7 +49,7 @@ class Curve():
 
 
 def energy_disspation(hysteresis_data:pd.DataFrame):
-    curve=Curve(hysteresis_data.iloc[:,0],hysteresis_data[:,1])
-    return curve.energy_loops[0],[1]
+    curve=Curve(hysteresis_data.iloc[:,0].values,hysteresis_data.iloc[:,1].values)
+    return curve.energy_loops()
 
     

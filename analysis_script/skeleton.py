@@ -13,20 +13,19 @@ def skeleton(hysteresis_data:pd.DataFrame):
     #read hysteresis curve
     hystere_curve=hysteresis_data
     #pre-define skeleton disp range and num
-    skeleton_disp=np.linspace(hystere_curve.iloc[:,0].min,hystere_curve.iloc[:,0].max,300)
-
+    skeleton_disp=np.linspace(min(hystere_curve.iloc[:,0]),max(hystere_curve.iloc[:,0]),300)
+    skeleton_disp_select=[]
+    skeleton_force_select=[]
     #obtain the force value for the every pre-difined disp reached first
-    select_index=[]
     for i in skeleton_disp:
         for j,k in enumerate(hystere_curve.iloc[:,0]):
-            if abs(i-k)<0.1:
-                select_index.append(j)
+            if abs(i-k)<0.5:
+                skeleton_disp_select.append(k)
+                skeleton_force_select.append(hystere_curve.iloc[j,1])
                 break
-    skeleton_force=np.array([hystere_curve.iloc[i,1] for i in select_index])
     
     #combine the obtained disp and force into skeleton:numpy.darray
-    skeleton=np.array([skeleton_disp,skeleton_force])
-    skeleton=pd.DataFrame(skeleton)
+    skeleton=pd.DataFrame({"d":skeleton_disp_select,'f':skeleton_force_select})
     return skeleton
 
 

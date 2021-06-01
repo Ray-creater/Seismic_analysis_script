@@ -1,4 +1,4 @@
-# This Python file uses the following encoding: utf-8
+# phis Python file uses the following encoding: utf-8
 from itertools import accumulate
 import os
 from pathlib import Path
@@ -62,7 +62,7 @@ class MyFigureCanvas(FigureCanvas):
         elif title=="Stiffness":
             self.axes.set_ylabel('Stiffness(kN/mm)')
         else:
-            self.axes.set_ylabel('Force(kN/mm)')
+            self.axes.set_ylabel('Force(kN)')
         self.axes.set_xlabel('Disp(mm)')
         self.axes.grid()
         self.draw()
@@ -76,7 +76,8 @@ class Seismic(QMainWindow):
         #Three_main_mywidget
         top_widget=central_widget_of_mainwindow.add_my_qwidget("Top","Horizontal")
         middle_widget=central_widget_of_mainwindow.add_my_qwidget("Middle","Horizontal")
-        bottom_widget=central_widget_of_mainwindow.add_my_qwidget("Bottom","Vertical")
+        bottom_widget=central_widget_of_mainwindow.add_my_qwidget("Bottom","Horizontal")
+
         central_widget_of_mainwindow.setStretchFactor(top_widget,middle_widget,bottom_widget,scale=(1,8,1))
 
         #top
@@ -110,14 +111,38 @@ class Seismic(QMainWindow):
             "Stiffness",
             "Energy dissipation per round",
             "Energy dissipation accumulation") 
+        analysis_widgets=[i for i in analysis_buttons.values()]
+        analysis_widgets.append(radiobuttons_myqwidget)
+        analysis_scale=[4 for _ in analysis_widgets]
+        analysis_scale[-1]=1
+        analysis_groupbox.setStretchFactor(*analysis_widgets,scale=analysis_scale)
+
+        ## Main display window
         self.plot_arg=[[1,2,3,4,5],[1,2,3,4,5],""]
         self.display_window=MyFigureCanvas(*self.plot_arg)
         right_mainview_widge.add_any_qwidget(self.display_window)
         plot_button=right_mainview_widge.add_pushbuttons('Output pic')
         plot_button.setFixedWidth(100)
 
+        
+
         #bottom
-        bottom_widget.add_textedits('Messagebox').setReadOnly(True)
+        yield_point_qgroupbox=bottom_widget.add_my_qgroupbox('Yield point','Verticle')
+        ductility_qgroupbox=bottom_widget.add_my_qgroupbox('Ductility','Verticle')
+        ##
+        yield_disp_qwidget=yield_point_qgroupbox.add_my_qwidget('Horizontal')
+        yield_force_qwidget=yield_point_qgroupbox.add_my_qwidget("Horizontal")
+        yield_disp_qwidget.add_labels("Yield disp:")
+        self.yield_disp_textedit=yield_disp_qwidget.add_textedits("Yield disp value")
+        self.yield_disp_textedit.setFixedHeight(20)
+        yield_force_qwidget.add_labels("Yield force:")
+        self.yield_force_textedit=yield_force_qwidget.add_textedits('Yield force value')
+        self.yield_force_textedit.setFixedHeight(20)
+        ##
+        ductility_qgroupbox.add_labels('Ductility factor:')
+        self.ductility_textedit=ductility_qgroupbox.add_textedits("Ductility factor value")
+        self.ductility_textedit.setFixedHeight(20)
+
 
         #button function
         ##path_button
@@ -131,8 +156,8 @@ class Seismic(QMainWindow):
         analysis_buttons['Ductility factor'].clicked.connect(self.ductility_factor_analysis)
         analysis_buttons['Stiffness'].clicked.connect(self.stiffness_analysis)
         analysis_buttons['Energy dissipation per round'].clicked.connect(self.energy_dissipation_per_round_analysis)
-        analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.test_button)
-        # analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.energy_dissipation_accumulation_analysis)
+        # analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.test_button)
+        analysis_buttons['Energy dissipation accumulation'].clicked.connect(self.energy_dissipation_accumulation_analysis)
 
         ##
         plot_button.clicked.connect(self.output_pic)
@@ -167,14 +192,12 @@ class Seismic(QMainWindow):
         else:
             QMessageBox.warning(self,"Error",'Please select xslx path')
         
-
     def hysteresis_curve(self):
         if hasattr(self,'hysteresis_data'):
             self.comfirm_path()
         self.plot_arg=[self.hysteresis_data.iloc[:,0],self.hysteresis_data.iloc[:,1],"Hysteresis"]
         self.display_window.redraw(*self.plot_arg)
        
-
     def skeleton_curve(self):
         if not hasattr(self,'hysteresis_data'):
             self.comfirm_path()
@@ -197,6 +220,9 @@ class Seismic(QMainWindow):
             yield_point=geometry(self.skeleton_data)
         self.plot_arg=[self.skeleton_data.iloc[:,0],self.skeleton_data.iloc[:,1],"Skeleton"]
         self.display_window.redraw_vline(*self.plot_arg,vline=yield_point)
+        
+        self.yield_disp_textedit.setText(str(yield_point[0]))
+        self.yield_force_textedit.setText(str(yield_point[1]))
         
             
         
@@ -228,7 +254,7 @@ class Seismic(QMainWindow):
             yield_point=geometry(self.skeleton_data)
         yield_disp=yield_point[0]
         ductility_factor=failure_disp/yield_disp
-        print(ductility_factor)
+        self.ductility_textedit.setText(str(ductility_factor))
         return ductility_factor
 
     def stiffness_analysis(self):
@@ -239,32 +265,21 @@ class Seismic(QMainWindow):
         stiffness=[i[1].iat[1]/i[1].iat[0] for i in self.skeleton_data.iterrows() ]
         self.plot_arg=[disp,stiffness,"Stiffness"]
         self.display_window.redraw(*self.plot_arg)
-       
-
-
-
 
     def energy_dissipation_per_round_analysis(self):
         if not hasattr(self,'hysteresis_data'):
             self.comfirm_path()
-
         self.energy=energy_disspation(self.hysteresis_data)
-        energy_per_round=self.energy[0]
-        print(energy_per_round)
-        
-            
+        self.plot_arg=[self.energy[0],self.energy[1],"Energy"]
+        self.display_window.redraw(*self.plot_arg)
         
             
     def energy_dissipation_accumulation_analysis(self):
         if not hasattr(self,'energy'):
-            self.energy_dissipation_per_round_analysis()
-        energy_accumu=self.energy[1]
-        print(energy_accumu)
+            self.energy=energy_disspation(self.hysteresis_data)
+        self.plot_arg=[self.energy[0],self.energy[2],"Energy"]
+        self.display_window.redraw(*self.plot_arg)
             
-
-
-    def test_button(self):
-        self.display_window.redraw(*self.plot_arg,vline=(2,2))
 
 
 

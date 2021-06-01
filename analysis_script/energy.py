@@ -37,13 +37,16 @@ class Curve():
         loops=self.split_to_loops()
         energy_real=[]
         energy_trangle=[]
+        disp_list=[]
         for i in range(len(loops.keys())):
-            energy_real.append(area_loop(loops[i]["D"],loops[i]["F"]))
+            energy,disp=area_loop(loops[i]["D"],loops[i]["F"])
+            energy_real.append(energy)
+            disp_list.append(disp)
             energy_trangle.append(area_trangle(loops[i]["D"],loops[i]["F"]))
         Eratio=[i/j for i,j in zip(energy_real,energy_trangle)]
         Esum=sum(energy_real)
         energy_accumulation=list(itertools.accumulate(energy_real))
-        return energy_real,energy_accumulation,Eratio,Esum
+        return disp_list,energy_real,energy_accumulation,Eratio,Esum
 
         
 

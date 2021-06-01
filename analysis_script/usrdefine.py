@@ -11,18 +11,19 @@ import numpy as np
 import pandas as pd 
 
 
-def area_loop(D,F):
-    F_dataframe=pd.DataFrame(F)
-    sy=[F_dataframe.idxmax,F_dataframe.idxmin]
+def area_loop(D:Iterable,F:Iterable):
+    D,F=list(D),list(F)
+    sy=[findclosest(F,max(F)),findclosest(F,min(F))]
     sy.sort()
     line1=(D[sy[0]:sy[1]],F[sy[0]:sy[1]])
-    D[sy[0]:sy[1]]=[]
-    F[sy[0]:sy[1]]=[]
+    for _ in range(sy[1]-sy[0]):
+        D.pop(sy[0])
+        F.pop(sy[0])
     D,F=puple_sort_combine(D,F)
     line2=(D,F)
     p1,p2=polyfit(*line1),polyfit(*line2)
     p=p1-p2
-    return abs(scipy.integrate.quad(p,D[F.index(min(F))],D[F.index(max(F))])[0])    
+    return abs(scipy.integrate.quad(p,D[F.index(min(F))],D[F.index(max(F))])[0]),max(D)
 
 def area_trangle(D,F):
     dr,fup,dl,flow=max(D),max(F),min(D),min(F)

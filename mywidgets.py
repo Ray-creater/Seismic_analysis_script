@@ -122,6 +122,17 @@ class MyQWidget(QWidget):
         self.layout.addWidget(self.my_qgroupbox[name])
         return self.my_qgroupbox[name]
 
+    def add_labels(self,*name:str):
+        if len(name)==1:
+            labels=QLabel(text=name[0])
+            self.layout.addWidget(labels)
+        else:
+            labels={}
+            for i in name:
+                labels[i]=QLabel(i)
+                self.layout.addWidget(labels[i])
+        return labels
+
 
     def add_pushbuttons(self,*name):
         if len(name)==1:

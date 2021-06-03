@@ -74,14 +74,16 @@ class Seismic(QMainWindow):
         self.setCentralWidget(central_widget_of_mainwindow)
 
         #Three_main_mywidget
-        top_widget=central_widget_of_mainwindow.add_my_qwidget("Top","Horizontal")
+        # top_widget=central_widget_of_mainwindow.add_my_qwidget("Top","Horizontal")
         middle_widget=central_widget_of_mainwindow.add_my_qwidget("Middle","Horizontal")
         bottom_widget=central_widget_of_mainwindow.add_my_qwidget("Bottom","Horizontal")
 
-        central_widget_of_mainwindow.setStretchFactor(top_widget,middle_widget,bottom_widget,scale=(1,8,1))
+        # central_widget_of_mainwindow.setStretchFactor(top_widget,middle_widget,bottom_widget,scale=(1,8,1))
+        central_widget_of_mainwindow.setStretchFactor(middle_widget,bottom_widget,scale=(8,2))
+        
 
-        #top
-        top_widget.add_pushbuttons('Button1',"Button2")
+        # top
+        # top_widget.add_pushbuttons('Button1',"Button2")
 
         #middle
         left_option_widget=middle_widget.add_my_qwidget("Option","Vertical")

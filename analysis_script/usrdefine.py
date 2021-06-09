@@ -55,3 +55,10 @@ def findclosest(array:Iterable,goal):
         raise TypeError("Wrong type for Inputs")
 
 
+def parse_str_array(string:str)->tuple:
+    strip_string=string.strip(' ')
+    split_string=strip_string.split(',')
+    array=(float(i) for i in split_string)
+    return tuple(array)
+
+
